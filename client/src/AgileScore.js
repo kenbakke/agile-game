@@ -41,6 +41,7 @@ export const AgileScore = ({ score }) => {
                         <TableHead>
                             <TableRow>
                                 <TableCell align="center">Sprint</TableCell>
+                                <TableCell align="center">Velocity</TableCell>
                                 <TableCell align="center">Story points</TableCell>
                                 <TableCell align="center">Business value</TableCell>
                                 <TableCell align="center">Facility Mgmt</TableCell>
@@ -51,11 +52,12 @@ export const AgileScore = ({ score }) => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {score().map((row) => (
+                            {score.map((row) => (
                                 <TableRow key={row.sprint}>
                                     <TableCell component="th" scope="row" align="center">
                                         {row.sprint}
                                     </TableCell>
+                                    <TableCell align="center">{row.velocity}</TableCell>
                                     <TableCell align="center">{row.story}</TableCell>
                                     <TableCell align="center">{row.value}</TableCell>
                                     <TableCell align="center">{row.happiness[0]}</TableCell>

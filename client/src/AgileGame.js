@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import * as R from "ramda"
 
 import AppBar from '@material-ui/core/AppBar';
@@ -33,12 +33,59 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
+const getScore = (deck, sprint, sprintPoints) => {
+    const scores = R.map(
+        sprint => R.compose(
+            R.assoc("velocity", sprintPoints[sprint - 1]),
+            R.assoc("sprint", sprint),
+            R.reduce((acc, card) => {
+                return {
+                    story: acc.story + card.story,
+                    value: acc.value + card.value,
+                    happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx], R.range(0, acc.happiness.length))
+                }
+            }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] }),
+            R.filter(R.propEq("sprint", sprint))
+        )(deck)
+    )(R.range(1, sprint + 1))
 
+    const total = R.compose(
+        total => R.append(total, scores),
+        total => {
+            const sum = total.value + R.reduce(R.add, 0, total.happiness)
+            return R.assoc("sprint", `TOTAL: (${sum})`, total)
+        },
+        R.reduce((acc, card) => {
+            return {
+                story: acc.story + card.story,
+                value: acc.value + card.value * 100,
+                happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx] * 25, R.range(0, acc.happiness.length))
+            }
+        }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] })
+    )(scores)
+    return total
+}
+
+const SprintPoints = ({classes, points, setPoints}) => <Select className={classes.select}
+    native
+    inputProps={{
+        classes: {
+            icon: classes.selectIcon,
+        },
+    }}
+    value={points}
+    onChange={e => { setPoints(parseInt(e.target.value)) }}
+>
+    <option value={13}>13 points</option>
+    <option value={15}>15 points</option>
+    <option value={17}>17 points</option>
+</Select>
 
 export const AgileGame = () => {
     const classes = useStyles()
 
     const [sprint, setSprint] = useState(1)
+    const [sprintPoints, setSprintPoints] = useState([15, 15, 15])
 
     const [deck, setDeck] = useState(cards)
 
@@ -57,38 +104,10 @@ export const AgileGame = () => {
         setDeck(newDeck)
     }
 
-    const score = () => {
-        const scores = R.map(
-            sprint => R.compose(
-                R.assoc("sprint", sprint),
-                R.reduce((acc, card) => {
-                    return {
-                        story: acc.story + card.story,
-                        value: acc.value + card.value,
-                        happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx], R.range(0, acc.happiness.length))
-                    }
-                }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] }),
-                R.filter(R.propEq("sprint", sprint))
-            )(deck)
-        )(R.range(1, sprint + 1))
-
-        const total = R.compose(
-            total => R.append(total, scores),
-            total => {
-                const sum = total.value + R.reduce(R.add, 0, total.happiness)
-                return R.assoc("sprint", `TOTAL: (${sum})`, total)
-            },
-            R.reduce((acc, card) => {
-                return {
-                    story: acc.story + card.story,
-                    value: acc.value + card.value * 100,
-                    happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx] * 25, R.range(0, acc.happiness.length))
-                }
-            }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] })
-        )(scores)
-        return total
-    }
-
+    const score = useMemo(() => getScore(deck, sprint, sprintPoints), [deck, sprint, sprintPoints])
+    
+    const setPoints = (sprint) => (points) => setSprintPoints(
+        R.map(R.ifElse(index => sprint - 1 === index, index => points, index => sprintPoints[index]), R.range(0, sprintPoints.length)))
 
     return <React.Fragment>
         <CssBaseline />
@@ -112,6 +131,7 @@ export const AgileGame = () => {
                     <option value={2}>Sprint 2</option>
                     <option value={3}>Sprint 3</option>
                 </Select>
+                <SprintPoints {...{classes, points: sprintPoints[sprint - 1], setPoints: setPoints(sprint)}} />
             </Toolbar>
         </AppBar>
         <AgileScore {...{ score }} />
