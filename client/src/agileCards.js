@@ -1,3 +1,5 @@
+import * as R from "ramda"
+
 import card01 from "../public/Card_01.png"
 import card02 from "../public/Card_02.png"
 import card03 from "../public/Card_03.png"
@@ -53,3 +55,68 @@ export const cards = [
     { id: 24, round: 1, sprint: 0, happiness: [0, 0, 0, 0, -2], story: 4, value: 0, card: card25 },
     { id: 25, round: 2, sprint: 0, happiness: [1, 2, -2, 2, 2], story: 2, value: 5, card: card26 }
 ]
+
+const getSprint = (deck) => (cardNo) => R.compose(R.prop("sprint"), R.prop(0), R.filter(R.propEq("id", cardNo - 1)))(deck)
+
+const card03Extra = (deck) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            R.propEq("id", 18),
+            R.assoc("value", 0),
+            R.identity))(deck)
+    },
+    sprint => deck)(getSprint(deck)(3))
+
+const card13Extra = (deck) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            card => R.gt(R.prop("sprint", card), sprint),
+            card => R.assoc("story", card.story + 1, card),
+            R.identity))(deck)
+    },
+    sprint => deck)(getSprint(deck)(13))
+
+const card14Extra = (deck) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            card => R.and(R.gte(R.prop("sprint", card), sprint), R.includes(R.prop("id", card), [0, 5, 9, 17, 19, 20, 21])),
+            card => R.assoc("story", card.story - 1, card),
+            R.identity))(deck)
+    },
+    sprint => deck)(getSprint(deck)(14))
+
+const card16Extra = (deck) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            card => R.and(R.gte(R.prop("sprint", card), sprint), R.includes(R.prop("id", card), [7])),
+            card => R.assoc("story", 3, card),
+            R.identity))(deck)
+    },
+    sprint => deck)(getSprint(deck)(16))
+
+const card16ExtraScore = (deck) => (scores) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            score => R.gt(R.prop("sprint", score), sprint),
+            score => R.assoc("velocity", score.velocity + 1, score),
+            R.identity))(scores)
+    },
+    sprint => scores)(getSprint(deck)(16))
+
+const card25ExtraScore = (deck) => (scores) => R.ifElse(
+    sprint => R.gt(sprint, 0),
+    sprint => {
+        return R.map(R.ifElse(
+            score => R.equals(R.prop("sprint", score), sprint + 1),
+            score => R.assoc("velocity", score.velocity + 3, score),
+            R.identity))(scores)
+    },
+    sprint => scores)(getSprint(deck)(25))
+
+export const deckModifiers = [card03Extra, card13Extra, card14Extra, card16Extra]
+export const scoreModifiers = [card25ExtraScore, card16ExtraScore]

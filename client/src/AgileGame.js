@@ -12,7 +12,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { AgilePanel } from "./AgilePanel";
 import { AgileScore } from "./AgileScore";
 
-import { cards } from "./agileCards"
+import { cards, deckModifiers, scoreModifiers } from "./agileCards"
 
 const useStyles = makeStyles((theme) => ({
     select: {
@@ -34,20 +34,23 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const getScore = (deck, sprint, sprintPoints) => {
-    const scores = R.map(
-        sprint => R.compose(
-            R.assoc("velocity", sprintPoints[sprint - 1]),
-            R.assoc("sprint", sprint),
-            R.reduce((acc, card) => {
-                return {
-                    story: acc.story + card.story,
-                    value: acc.value + card.value,
-                    happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx], R.range(0, acc.happiness.length))
-                }
-            }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] }),
-            R.filter(R.propEq("sprint", sprint))
-        )(deck)
-    )(R.range(1, sprint + 1))
+    const scores = R.compose(
+        x => R.compose(...R.map(fn => fn(deck), scoreModifiers))(x),
+        R.map(
+            sprint => R.compose(
+                R.assoc("velocity", sprintPoints[sprint - 1]),
+                R.assoc("sprint", sprint),
+                R.reduce((acc, card) => {
+                    return {
+                        story: acc.story + card.story,
+                        value: acc.value + card.value,
+                        happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx], R.range(0, acc.happiness.length))
+                    }
+                }, { story: 0, value: 0, happiness: [0, 0, 0, 0, 0] }),
+                R.filter(R.propEq("sprint", sprint)),
+                ...deckModifiers
+            )(deck)
+        ))(R.range(1, sprint + 1))
 
     const total = R.compose(
         total => R.append(total, scores),
@@ -66,7 +69,7 @@ const getScore = (deck, sprint, sprintPoints) => {
     return total
 }
 
-const SprintPoints = ({classes, points, setPoints}) => <Select className={classes.select}
+const SprintPoints = ({ classes, points, setPoints }) => <Select className={classes.select}
     native
     inputProps={{
         classes: {
@@ -105,7 +108,7 @@ export const AgileGame = () => {
     }
 
     const score = useMemo(() => getScore(deck, sprint, sprintPoints), [deck, sprint, sprintPoints])
-    
+
     const setPoints = (sprint) => (points) => setSprintPoints(
         R.map(R.ifElse(index => sprint - 1 === index, index => points, index => sprintPoints[index]), R.range(0, sprintPoints.length)))
 
@@ -131,7 +134,7 @@ export const AgileGame = () => {
                     <option value={2}>Sprint 2</option>
                     <option value={3}>Sprint 3</option>
                 </Select>
-                <SprintPoints {...{classes, points: sprintPoints[sprint - 1], setPoints: setPoints(sprint)}} />
+                <SprintPoints {...{ classes, points: sprintPoints[sprint - 1], setPoints: setPoints(sprint) }} />
             </Toolbar>
         </AppBar>
         <AgileScore {...{ score }} />
