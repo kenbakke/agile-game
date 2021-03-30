@@ -58,7 +58,7 @@ export const AgileScore = ({ score }) => {
                                         {row.sprint}
                                     </TableCell>
                                     <TableCell align="center">{row.velocity}</TableCell>
-                                    <TableCell align="center">{row.story}</TableCell>
+                                    <TableCell align="center">{row.story > row.velocity ? <span style={{ color: "red" }}>{`[${row.story}]`}</span> : <span>{row.story}</span>}</TableCell>
                                     <TableCell align="center">{row.value}</TableCell>
                                     <TableCell align="center">{row.happiness[0]}</TableCell>
                                     <TableCell align="center">{row.happiness[1]}</TableCell>

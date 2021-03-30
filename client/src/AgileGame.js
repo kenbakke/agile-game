@@ -54,13 +54,13 @@ const getScore = (deck, sprint, sprintPoints) => {
 
     const total = R.compose(
         total => R.append(total, scores),
+        total => R.assoc("happiness", R.map(score => `${score}(${score/25})`, total.happiness), total),
         total => {
             const sum = total.value + R.reduce(R.add, 0, total.happiness)
             return R.assoc("sprint", `TOTAL: (${sum})`, total)
         },
         R.reduce((acc, card) => {
             return {
-                story: acc.story + card.story,
                 value: acc.value + card.value * 100,
                 happiness: R.map(idx => acc.happiness[idx] + card.happiness[idx] * 25, R.range(0, acc.happiness.length))
             }
